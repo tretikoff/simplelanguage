@@ -38,71 +38,67 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.truffle.sl.nodes.expression;
+package com.oracle.truffle.sl.nodes.expression
 
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.sl.SLException;
-import com.oracle.truffle.sl.nodes.SLExpressionNode;
+import com.oracle.truffle.api.frame.VirtualFrame
+import com.oracle.truffle.api.nodes.UnexpectedResultException
+import com.oracle.truffle.api.profiles.ConditionProfile
+import com.oracle.truffle.lama.SLException
+import com.oracle.truffle.lama.nodes.LamaExpressionNode
 
 /**
  * Logical operations in SL use short circuit evaluation: if the evaluation of the left operand
  * already decides the result of the operation, the right operand must not be executed. This is
- * expressed in using this base class for {@link SLLogicalAndNode} and {@link SLLogicalOrNode}.
+ * expressed in using this base class for [SLLogicalAndNode] and [SLLogicalOrNode].
  */
-public abstract class SLShortCircuitNode extends SLExpressionNode {
+abstract class LamaShortCircuitNode(left: LamaExpressionNode, right: LamaExpressionNode) : LamaExpressionNode() {
+    @Child
+    private val left: LamaExpressionNode
 
-    @Child private SLExpressionNode left;
-    @Child private SLExpressionNode right;
+    @Child
+    private val right: LamaExpressionNode
 
     /**
      * Short circuits might be used just like a conditional statement it makes sense to profile the
      * branch probability.
      */
-    private final ConditionProfile evaluateRightProfile = ConditionProfile.createCountingProfile();
-
-    public SLShortCircuitNode(SLExpressionNode left, SLExpressionNode right) {
-        this.left = left;
-        this.right = right;
+    private val evaluateRightProfile: ConditionProfile = ConditionProfile.createCountingProfile()
+    override fun executeGeneric(frame: VirtualFrame?): Any {
+        return executeLong(frame)
     }
 
-    @Override
-    public final Object executeGeneric(VirtualFrame frame) {
-        return executeBoolean(frame);
-    }
-
-    @Override
-    public final boolean executeBoolean(VirtualFrame frame) {
-        boolean leftValue;
-        try {
-            leftValue = left.executeBoolean(frame);
-        } catch (UnexpectedResultException e) {
-            throw SLException.typeError(this, e.getResult(), null);
+    override fun executeLong(frame: VirtualFrame?): Long {
+        val leftValue = try {
+            left.executeLong(frame)
+        } catch (e: UnexpectedResultException) {
+            throw SLException.typeError(this, e.getResult(), null)
         }
-        boolean rightValue;
-        try {
+        val rightValue: Long = try {
             if (evaluateRightProfile.profile(isEvaluateRight(leftValue))) {
-                rightValue = right.executeBoolean(frame);
+                right.executeLong(frame)
             } else {
-                rightValue = false;
+                0
             }
-        } catch (UnexpectedResultException e) {
-            throw SLException.typeError(this, leftValue, e.getResult());
+        } catch (e: UnexpectedResultException) {
+            throw SLException.typeError(this, leftValue, e.getResult())
         }
-        return execute(leftValue, rightValue);
+        return execute(leftValue, rightValue)
     }
 
     /**
      * This method is called after the left child was evaluated, but before the right child is
      * evaluated. The right child is only evaluated when the return value is {code true}.
      */
-    protected abstract boolean isEvaluateRight(boolean leftValue);
+    protected abstract fun isEvaluateRight(leftValue: Long): Boolean
 
     /**
      * Calculates the result of the short circuit operation. If the right node is not evaluated then
-     * <code>false</code> is provided.
+     * `false` is provided.
      */
-    protected abstract boolean execute(boolean leftValue, boolean rightValue);
+    protected abstract fun execute(leftValue: Long, rightValue: Long): Long
 
+    init {
+        this.left = left
+        this.right = right
+    }
 }
