@@ -59,4 +59,12 @@ abstract class LamaBuiltinNode : LamaExpressionNode() {
     }
 
     protected abstract fun execute(frame: VirtualFrame?): Any
+
+    override fun executeLong(frame: VirtualFrame?): Long {
+        return super.executeLong(frame)
+    }
+
+    override fun executeVoid(frame: VirtualFrame?) {
+        super.executeVoid(frame)
+    }
 }

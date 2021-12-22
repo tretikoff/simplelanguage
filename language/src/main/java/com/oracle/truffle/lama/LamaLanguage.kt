@@ -18,7 +18,7 @@ import com.oracle.truffle.lama.runtime.SLLanguageView
 
 @Registration(
     id = LamaLanguage.ID,
-    name = "SL",
+    name = "Lama",
     defaultMimeType = LamaLanguage.MIME_TYPE,
     characterMimeTypes = [LamaLanguage.MIME_TYPE],
     contextPolicy = ContextPolicy.SHARED,

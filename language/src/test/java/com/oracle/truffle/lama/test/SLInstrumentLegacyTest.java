@@ -40,52 +40,14 @@
  */
 package com.oracle.truffle.lama.test;
 
-import static com.oracle.truffle.lama.test.SLJavaInteropTest.toUnixString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Engine;
-import org.graalvm.polyglot.Instrument;
-import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.Value;
-import org.junit.Test;
-
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.EventBinding;
-import com.oracle.truffle.api.instrumentation.EventContext;
-import com.oracle.truffle.api.instrumentation.ExecutionEventListener;
-import com.oracle.truffle.api.instrumentation.ProbeNode;
-import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
-import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.*;
 import com.oracle.truffle.api.instrumentation.StandardTags.CallTag;
-import com.oracle.truffle.api.instrumentation.TruffleInstrument;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.LibraryFactory;
@@ -94,6 +56,17 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.lama.runtime.SLBigNumber;
 import com.oracle.truffle.tck.DebuggerTester;
+import org.graalvm.polyglot.*;
+import org.junit.Test;
+
+import java.io.*;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Semaphore;
+
+import static com.oracle.truffle.lama.test.SLJavaInteropTest.toUnixString;
+import static org.junit.Assert.*;
 
 /**
  * Test of SL instrumentation.
@@ -106,29 +79,29 @@ public class SLInstrumentLegacyTest {
     @Test
     public void testLexicalScopes() throws Exception {
         String code = "function test(n) {\n" +
-                        "  a = 1;\n" +          // 2
-                        "  if (a > 0) {\n" +
-                        "    b = 10;\n" +
-                        "    println(b);\n" +   // 5
-                        "  }\n" +
-                        "  if (a == 1) {\n" +
-                        "    b = 20;\n" +
-                        "    a = 0;\n" +
-                        "    c = 1;\n" +        // 10
-                        "    if (b > 0) {\n" +
-                        "      a = 4;\n" +
-                        "      b = 5;\n" +
-                        "      c = 6;\n" +
-                        "      d = 7;\n" +      // 15
-                        "      println(d);\n" +
-                        "    }\n" +
-                        "  }\n" +
-                        "  println(b);\n" +
-                        "  println(a);\n" +     // 20
-                        "}\n" +
-                        "function main() {\n" +
-                        "  test(\"n_n\");\n" +
-                        "}";
+                "  a = 1;\n" +          // 2
+                "  if (a > 0) {\n" +
+                "    b = 10;\n" +
+                "    println(b);\n" +   // 5
+                "  }\n" +
+                "  if (a == 1) {\n" +
+                "    b = 20;\n" +
+                "    a = 0;\n" +
+                "    c = 1;\n" +        // 10
+                "    if (b > 0) {\n" +
+                "      a = 4;\n" +
+                "      b = 5;\n" +
+                "      c = 6;\n" +
+                "      d = 7;\n" +      // 15
+                "      println(d);\n" +
+                "    }\n" +
+                "  }\n" +
+                "  println(b);\n" +
+                "  println(a);\n" +     // 20
+                "}\n" +
+                "function main() {\n" +
+                "  test(\"n_n\");\n" +
+                "}";
         Source source = Source.newBuilder("sl", code, "testing").build();
         List<Throwable> throwables;
         try (Engine engine = Engine.newBuilder().out(new java.io.OutputStream() {
@@ -502,16 +475,16 @@ public class SLInstrumentLegacyTest {
     @Test
     public void testOutput() throws IOException {
         String code = "function main() {\n" +
-                        "  f = fac(5);\n" +
-                        "  println(f);\n" +
-                        "}\n" +
-                        "function fac(n) {\n" +
-                        "  println(n);\n" +
-                        "  if (n <= 1) {\n" +
-                        "    return 1;\n" + // break
-                        "  }\n" +
-                        "  return n * fac(n - 1);\n" +
-                        "}\n";
+                "  f = fac(5);\n" +
+                "  println(f);\n" +
+                "}\n" +
+                "function fac(n) {\n" +
+                "  println(n);\n" +
+                "  if (n <= 1) {\n" +
+                "    return 1;\n" + // break
+                "  }\n" +
+                "  return n * fac(n - 1);\n" +
+                "}\n";
         String fullOutput = "5\n4\n3\n2\n1\n120\n";
         String fullLines = "[5, 4, 3, 2, 1, 120]";
         // Pure exec:
@@ -592,9 +565,9 @@ public class SLInstrumentLegacyTest {
     @Test
     public void testRedoIO() throws Throwable {
         String code = "function main() {\n" +
-                        "  a = readln();\n" +
-                        "  return a;\n" +
-                        "}\n";
+                "  a = readln();\n" +
+                "  return a;\n" +
+                "}\n";
         final Source ioWait = Source.newBuilder("sl", code, "testing").build();
         final TestRedoIOLegacy[] redoIOPtr = new TestRedoIOLegacy[1];
         InputStream strIn = new ByteArrayInputStream("O.K.".getBytes());
@@ -692,91 +665,6 @@ public class SLInstrumentLegacyTest {
 
     }
 
-    /**
-     * Test that we can forcibly return early from call nodes with an arbitrary value.
-     */
-    @Test
-    public void testEarlyReturn() throws Exception {
-        String code = "function main() {\n" +
-                        "  a = 10;\n" +
-                        "  b = a;\n" +
-                        "  // Let fce() warm up and specialize:\n" +
-                        "  while (a == b && a < 100000) {\n" +
-                        "    a = fce(a);\n" +
-                        "    b = b + 1;\n" +
-                        "  }\n" +
-                        "  c = a;\n" +
-                        "  // Run fce() and alter it's return type in an instrument:\n" +
-                        "  c = fce(c);\n" +
-                        "  return c;\n" +
-                        "}\n" +
-                        "function fce(x) {\n" +
-                        "  return x + 1;\n" +
-                        "}\n";
-        final Source source = Source.newBuilder("sl", code, "testing").build();
-        ByteArrayOutputStream engineOut = new ByteArrayOutputStream();
-        Engine engine = Engine.newBuilder().err(engineOut).build();
-        Context context = Context.newBuilder().engine(engine).build();
-        // No instrument:
-        Value ret = context.eval(source);
-        assertTrue(ret.isNumber());
-        assertEquals(100001L, ret.asLong());
-
-        EarlyReturnLegacyInstrument earlyReturn = context.getEngine().getInstruments().get("testEarlyReturnLegacy").lookup(EarlyReturnLegacyInstrument.class);
-
-        earlyReturn.fceCode = "fce(a)";
-        earlyReturn.returnValue = 200000L;
-        ret = context.eval(source);
-        assertTrue(ret.isNumber());
-        assertEquals(200001L, ret.asLong());
-
-        earlyReturn.returnValue = "Hello!";
-        ret = context.eval(source);
-        assertFalse(ret.isNumber());
-        assertTrue(ret.isString());
-        assertEquals("Hello!1", ret.asString());
-
-        // Specialize to long again:
-        earlyReturn.fceCode = "<>";
-        ret = context.eval(source);
-        assertTrue(ret.isNumber());
-        assertEquals(100001L, ret.asLong());
-
-        earlyReturn.fceCode = "fce(a)";
-        earlyReturn.returnValue = new BigInteger("-42");
-        boolean interopFailure;
-        try {
-            context.eval(source);
-            interopFailure = false;
-        } catch (PolyglotException err) {
-            interopFailure = true;
-        }
-        assertTrue(interopFailure);
-
-        earlyReturn.returnValue = new SLBigNumber(new BigInteger("-42"));
-        ret = context.eval(source);
-        assertTrue(ret.isNumber());
-        assertEquals(-41L, ret.asLong());
-
-        earlyReturn.fceCode = "fce(c)";
-        earlyReturn.returnValue = Boolean.TRUE;
-        ret = context.eval(source);
-        assertTrue(ret.isBoolean());
-        assertEquals(Boolean.TRUE, ret.asBoolean());
-
-        earlyReturn.fceCode = "fce(c)";
-        earlyReturn.returnValue = -42.00;
-        ret = context.eval(source);
-        assertTrue(ret.isNumber());
-        assertEquals(-42.0, ret.asDouble(), 1e-8);
-
-        earlyReturn.fceCode = "fce(c)";
-        earlyReturn.returnValue = "Hello!";
-        ret = context.eval(source);
-        assertTrue(ret.isString());
-        assertEquals("Hello!", ret.asString());
-    }
-
     @TruffleInstrument.Registration(id = "testEarlyReturnLegacy", services = EarlyReturnLegacyInstrument.class)
     public static class EarlyReturnLegacyInstrument extends TruffleInstrument {
 
@@ -824,10 +712,10 @@ public class SLInstrumentLegacyTest {
             return; // GR-16755
         }
         String code = "function main() {\n" +
-                        "  a = new();\n" +
-                        "  b = a.rp1;\n" +
-                        "  return b;\n" +
-                        "}\n";
+                "  a = new();\n" +
+                "  b = a.rp1;\n" +
+                "  return b;\n" +
+                "}\n";
         final Source source = Source.newBuilder("sl", code, "testing").build();
         SourceSection ss = DebuggerTester.getSourceImpl(source).createSection(24, 5);
         Context context = Context.create();
@@ -946,18 +834,18 @@ public class SLInstrumentLegacyTest {
     @Test
     public void testChangeArgumentsOnReenter() throws Exception {
         String code = "function main() {\n" +
-                        "  y = fce(0, 10000);\n" +
-                        "  return y;\n" +
-                        "}\n" +
-                        "function fce(x, z) {\n" +
-                        "  y = 2 * x;\n" +
-                        "  if (y < z) {\n" +
-                        "    print(\"A bad error.\");\n" +
-                        "    return 0 - 1;\n" +
-                        "  } else {\n" +
-                        "    return y;\n" +
-                        "  }\n" +
-                        "}\n";
+                "  y = fce(0, 10000);\n" +
+                "  return y;\n" +
+                "}\n" +
+                "function fce(x, z) {\n" +
+                "  y = 2 * x;\n" +
+                "  if (y < z) {\n" +
+                "    print(\"A bad error.\");\n" +
+                "    return 0 - 1;\n" +
+                "  } else {\n" +
+                "    return y;\n" +
+                "  }\n" +
+                "}\n";
         final Source source = Source.newBuilder("sl", code, "testing").build();
         Context context = Context.create();
         IncreaseArgOnErrorLegacyInstrument incOnError = context.getEngine().getInstruments().get("testIncreaseArgumentOnErrorLegacy").lookup(IncreaseArgOnErrorLegacyInstrument.class);
@@ -971,7 +859,8 @@ public class SLInstrumentLegacyTest {
     public static final class IncreaseArgOnErrorLegacyInstrument extends TruffleInstrument {
 
         private Env env;
-        @CompilationFinal private ThreadDeath unwind;
+        @CompilationFinal
+        private ThreadDeath unwind;
 
         @Override
         @SuppressWarnings("hiding")
@@ -982,26 +871,26 @@ public class SLInstrumentLegacyTest {
 
         void attachOn(String error) {
             EventBinding<ExecutionEventListener> reenterBinding = env.getInstrumenter().attachExecutionEventListener(SourceSectionFilter.newBuilder().tagIs(StandardTags.RootTag.class).build(),
-                            new ExecutionEventListener() {
-                                @Override
-                                public void onEnter(EventContext context, VirtualFrame frame) {
-                                }
+                    new ExecutionEventListener() {
+                        @Override
+                        public void onEnter(EventContext context, VirtualFrame frame) {
+                        }
 
-                                @Override
-                                public void onReturnValue(EventContext context, VirtualFrame frame, Object result) {
-                                }
+                        @Override
+                        public void onReturnValue(EventContext context, VirtualFrame frame, Object result) {
+                        }
 
-                                @Override
-                                public void onReturnExceptional(EventContext context, VirtualFrame frame, Throwable exception) {
-                                }
+                        @Override
+                        public void onReturnExceptional(EventContext context, VirtualFrame frame, Throwable exception) {
+                        }
 
-                                @Override
-                                public Object onUnwind(EventContext context, VirtualFrame frame, Object info) {
-                                    frame.getArguments()[0] = (Long) frame.getArguments()[0] + 1;
-                                    return ProbeNode.UNWIND_ACTION_REENTER;
-                                }
+                        @Override
+                        public Object onUnwind(EventContext context, VirtualFrame frame, Object info) {
+                            frame.getArguments()[0] = (Long) frame.getArguments()[0] + 1;
+                            return ProbeNode.UNWIND_ACTION_REENTER;
+                        }
 
-                            });
+                    });
             env.getInstrumenter().attachExecutionEventListener(SourceSectionFilter.newBuilder().tagIs(StandardTags.StatementTag.class).build(), new ExecutionEventListener() {
                 @Override
                 public void onEnter(EventContext context, VirtualFrame frame) {

@@ -1,12 +1,10 @@
 package com.oracle.truffle.lama.nodes.expression
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary
 import com.oracle.truffle.api.dsl.Fallback
 import com.oracle.truffle.api.dsl.Specialization
 import com.oracle.truffle.api.nodes.NodeInfo
 import com.oracle.truffle.lama.SLException
 import com.oracle.truffle.lama.nodes.LamaBinaryNode
-import com.oracle.truffle.lama.runtime.SLBigNumber
 
 @NodeInfo(shortName = "/")
 abstract class LamaDivNode : LamaBinaryNode() {
@@ -18,12 +16,6 @@ abstract class LamaDivNode : LamaBinaryNode() {
             throw ArithmeticException("long overflow")
         }
         return result
-    }
-
-    @Specialization
-    @TruffleBoundary
-    protected fun div(left: SLBigNumber, right: SLBigNumber): SLBigNumber {
-        return SLBigNumber(left.value.divide(right.value))
     }
 
     @Fallback

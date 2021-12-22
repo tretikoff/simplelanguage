@@ -4,7 +4,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal
 import com.oracle.truffle.api.TruffleLanguage
 import com.oracle.truffle.api.TruffleLanguage.ContextReference
 import com.oracle.truffle.api.nodes.Node
-import com.oracle.truffle.api.nodes.RootNode
 import com.oracle.truffle.lama.LamaLanguage
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -12,8 +11,6 @@ import java.io.PrintWriter
 
 class LamaContext(language: LamaLanguage, @field:CompilationFinal private var env: TruffleLanguage.Env) {
     private val language: LamaLanguage
-
-    val functionsRegistry = SLFunctionRegistry(language)
 
     /**
      * Returns the default input, i.e., the source for the [SLReadlnBuiltin]. To allow unit
@@ -39,11 +36,6 @@ class LamaContext(language: LamaLanguage, @field:CompilationFinal private var en
         fun get(node: Node?): LamaContext {
             return REFERENCE[node]
         }
-
-        fun getFunctionsRegistry(node: RootNode) = lazy<SLFunctionRegistry> {
-            return@lazy SLFunctionRegistry(node.getLanguage(LamaLanguage::class.java))
-        }
-
     }
 
     init {

@@ -1,5 +1,5 @@
 
-package com.oracle.truffle.sl.nodes.controlflow
+package com.oracle.truffle.lama.nodes.controlflow
 
 import com.oracle.truffle.lama.nodes.LamaStatementNode
 import com.oracle.truffle.api.nodes.BlockNode.ElementExecutor
@@ -13,7 +13,7 @@ class SLBlockNode(bodyNodes: Array<LamaStatementNode>) : LamaStatementNode(), El
     @Child
     private val block: BlockNode<LamaStatementNode>?
 
-    override fun executeVoid(frame: VirtualFrame) {
+    override fun executeVoid(frame: VirtualFrame?) {
         block?.executeVoid(frame, BlockNode.NO_ARGUMENT)
     }
 

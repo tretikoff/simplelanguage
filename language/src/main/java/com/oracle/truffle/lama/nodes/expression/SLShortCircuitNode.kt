@@ -1,4 +1,4 @@
-package com.oracle.truffle.sl.nodes.expression
+package com.oracle.truffle.lama.nodes.expression
 
 import com.oracle.truffle.api.frame.VirtualFrame
 import com.oracle.truffle.api.nodes.UnexpectedResultException

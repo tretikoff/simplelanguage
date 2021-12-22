@@ -10,7 +10,7 @@ import com.oracle.truffle.lama.nodes.controlflow.LamaWhileNode
 import com.oracle.truffle.lama.nodes.expression.*
 import com.oracle.truffle.lama.nodes.local.LamaReadArgumentNode
 import com.oracle.truffle.lama.nodes.local.LamaReadLocalVariableNode
-import com.oracle.truffle.sl.nodes.controlflow.SLBlockNode
+import com.oracle.truffle.lama.nodes.controlflow.SLBlockNode
 import org.antlr.v4.runtime.Token
 
 /**
@@ -250,7 +250,7 @@ class SLNodeFactory {
         val result: LamaExpressionNode
         val frameSlot = lexicalScope!!.locals[name]
         result = if (frameSlot != null) {
-            LamaReadLocalVariableNode.create(frameSlot)
+            LamaReadNodeGen.create(frameSlot)
         } else {
             LamaFunctionLiteralNode(name)
         }

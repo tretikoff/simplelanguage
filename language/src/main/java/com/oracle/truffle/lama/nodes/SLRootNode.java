@@ -1,38 +1,39 @@
 
 package com.oracle.truffle.lama.nodes;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.nodes.NodeVisitor;
-import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.nodes.*;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.lama.LamaLanguage;
-import com.oracle.truffle.lama.builtins.LamaBuiltinNode;
-import com.oracle.truffle.lama.nodes.local.LamaWriteLocalVariableNode;
 import com.oracle.truffle.lama.nodes.local.LamaReadArgumentNode;
+import com.oracle.truffle.lama.nodes.local.LamaWriteLocalVariableNode;
 import com.oracle.truffle.lama.runtime.LamaContext;
 
-@NodeInfo(language = "SL", description = "The root of all SL execution trees")
-public class SLRootNode extends RootNode {
-    /** The function body that is executed, and specialized during execution. */
-    @Child private LamaExpressionNode bodyNode;
+import java.util.ArrayList;
+import java.util.List;
 
-    /** The name of the function, for printing purposes only. */
+@NodeInfo(language = "Lama", description = "The root of all Lama execution trees")
+public class SLRootNode extends RootNode {
+    /**
+     * The function body that is executed, and specialized during execution.
+     */
+    @Child
+    private LamaExpressionNode bodyNode;
+
+    /**
+     * The name of the function, for printing purposes only.
+     */
     private final String name;
 
     private boolean isCloningAllowed;
 
     private final SourceSection sourceSection;
 
-    @CompilerDirectives.CompilationFinal(dimensions = 1) private volatile LamaWriteLocalVariableNode[] argumentNodesCache;
+    @CompilerDirectives.CompilationFinal(dimensions = 1)
+    private volatile LamaWriteLocalVariableNode[] argumentNodesCache;
 
     public SLRootNode(LamaLanguage language, FrameDescriptor frameDescriptor, LamaExpressionNode bodyNode, SourceSection sourceSection, String name) {
         super(language, frameDescriptor);

@@ -16,7 +16,7 @@ import com.oracle.truffle.api.nodes.Node
 import com.oracle.truffle.api.nodes.NodeInfo
 import com.oracle.truffle.api.source.SourceSection
 
-@NodeInfo(language = "SL", description = "The abstract base node for all SL statements")
+@NodeInfo(language = "Lama", description = "The abstract base node for all SL statements")
 @GenerateWrapper
 abstract class LamaStatementNode : Node(), InstrumentableNode {
     var sourceCharIndex = NO_SOURCE
@@ -93,8 +93,7 @@ abstract class LamaStatementNode : Node(), InstrumentableNode {
     }
 
     override fun createWrapper(probe: ProbeNode): WrapperNode? {
-//        return new LamaStatementNodeWrapper(this, probe);
-        return null
+        return LamaStatementNodeWrapper(this, probe)
     }
 
     /**
