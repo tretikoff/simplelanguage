@@ -54,7 +54,6 @@ import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
-import com.oracle.truffle.lama.runtime.SLBigNumber;
 import com.oracle.truffle.tck.DebuggerTester;
 import org.graalvm.polyglot.*;
 import org.junit.Test;

@@ -3,7 +3,7 @@ package com.oracle.truffle.lama.builtins
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary
 import com.oracle.truffle.api.dsl.Specialization
 import com.oracle.truffle.api.nodes.NodeInfo
-import com.oracle.truffle.lama.SLException
+import com.oracle.truffle.lama.LamaException
 import com.oracle.truffle.lama.runtime.LamaContext
 import java.io.BufferedReader
 import java.io.IOException
@@ -20,7 +20,7 @@ abstract class LamaReadBuiltin : LamaBuiltinNode() {
         return try {
             `in`.readLine()
         } catch (ex: IOException) {
-            throw SLException(ex.message, this)
+            throw LamaException(ex.message, this)
         }
     }
 }

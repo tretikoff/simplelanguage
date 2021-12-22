@@ -62,16 +62,6 @@ public final class LamaNull implements TruffleObject {
     }
 
     @ExportMessage
-    boolean hasMetaObject() {
-        return true;
-    }
-
-    @ExportMessage
-    Object getMetaObject() {
-        return SLType.NULL;
-    }
-
-    @ExportMessage
     static TriState isIdenticalOrUndefined(@SuppressWarnings("unused") LamaNull receiver, Object other) {
         /*
          * SLNull values are identical to other SLNull values.

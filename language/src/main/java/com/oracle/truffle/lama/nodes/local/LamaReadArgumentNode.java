@@ -4,7 +4,7 @@ package com.oracle.truffle.lama.nodes.local;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.lama.nodes.LamaExpressionNode;
-import com.oracle.truffle.lama.parser.SLNodeFactory;
+import com.oracle.truffle.lama.parser.LamaNodeFactory;
 import com.oracle.truffle.lama.runtime.LamaNull;
 
 /**
@@ -12,7 +12,7 @@ import com.oracle.truffle.lama.runtime.LamaNull;
  * <p>
  * Arguments are not type-specialized. To ensure that repeated accesses within a method are
  * specialized and can, e.g., be accessed without unboxing, all arguments are loaded into local
- * variables {@link SLNodeFactory#addFormalParameter in the method prologue}.
+ * variables {@link LamaNodeFactory#addFormalParameter in the method prologue}.
  */
 public class LamaReadArgumentNode extends LamaExpressionNode {
 

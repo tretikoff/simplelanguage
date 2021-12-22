@@ -4,7 +4,7 @@ import com.oracle.truffle.api.frame.VirtualFrame
 import com.oracle.truffle.api.nodes.NodeInfo
 import com.oracle.truffle.api.nodes.UnexpectedResultException
 import com.oracle.truffle.api.profiles.ConditionProfile
-import com.oracle.truffle.lama.SLException
+import com.oracle.truffle.lama.LamaException
 import com.oracle.truffle.lama.nodes.LamaExpressionNode
 import com.oracle.truffle.lama.runtime.LamaNull
 
@@ -35,7 +35,7 @@ class LamaIfNode(
         return try {
             conditionNode.executeLong(frame) != 0L
         } catch (ex: UnexpectedResultException) {
-            throw SLException.typeError(this, ex.result)
+            throw LamaException.typeError(this, ex.result)
         }
     }
 }

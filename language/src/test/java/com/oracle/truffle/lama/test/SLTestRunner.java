@@ -259,9 +259,6 @@ public class SLTestRunner extends ParentRunner<TestCase> {
         Context context = null;
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            for (NodeFactory<? extends LamaBuiltinNode> builtin : builtins) {
-                LamaLanguage.installBuiltin(builtin);
-            }
 
             Context.Builder builder = Context.newBuilder().allowExperimentalOptions(true).allowHostClassLookup((s) -> true).allowHostAccess(HostAccess.ALL).in(
                             new ByteArrayInputStream(testCase.testInput.getBytes("UTF-8"))).out(out);

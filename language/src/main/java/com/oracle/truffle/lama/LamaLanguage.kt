@@ -12,9 +12,7 @@ import com.oracle.truffle.api.interop.InteropLibrary
 import com.oracle.truffle.api.nodes.Node
 import com.oracle.truffle.api.nodes.NodeInfo
 import com.oracle.truffle.api.nodes.RootNode
-import com.oracle.truffle.lama.parser.SimpleLanguageParser
 import com.oracle.truffle.lama.runtime.LamaContext
-import com.oracle.truffle.lama.runtime.SLLanguageView
 
 @Registration(
     id = LamaLanguage.ID,
@@ -47,7 +45,8 @@ class LamaLanguage : TruffleLanguage<LamaContext>() {
     }
 
     override fun parse(request: ParsingRequest): CallTarget {
-        val evalMain: RootNode = SimpleLanguageParser.parseSL(this, request.source) as RootNode
+//        val evalMain: RootNode = SimpleLanguageParser.parseSL(this, request.source) as RootNode
+        val evalMain: RootNode? = null
         return Truffle.getRuntime().createCallTarget(evalMain)
     }
 
@@ -57,10 +56,6 @@ class LamaLanguage : TruffleLanguage<LamaContext>() {
 
     fun isSingleContext(): Boolean {
         return singleContext.isValid
-    }
-
-    override fun getLanguageView(context: LamaContext, value: Any): Any {
-        return SLLanguageView.create(value)
     }
 
     override fun isVisible(context: LamaContext, value: Any): Boolean {

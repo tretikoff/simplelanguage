@@ -8,18 +8,18 @@ import com.oracle.truffle.api.nodes.NodeInfo
 import com.oracle.truffle.lama.LamaLanguage
 import com.oracle.truffle.lama.nodes.LamaExpressionNode
 import com.oracle.truffle.lama.runtime.LamaContext
-import com.oracle.truffle.lama.runtime.SLFunction
+import com.oracle.truffle.lama.runtime.LamaFunction
 
 @NodeInfo(shortName = "func")
 class LamaFunctionLiteralNode(
     private val functionName: String
 ) : LamaExpressionNode() {
     @CompilationFinal
-    private var cachedFunction: SLFunction? = null
-    override fun executeGeneric(frame: VirtualFrame?): SLFunction? {
+    private var cachedFunction: LamaFunction? = null
+    override fun executeGeneric(frame: VirtualFrame?): LamaFunction? {
         val l = LamaLanguage[this]
         CompilerAsserts.partialEvaluationConstant<Any>(l)
-        var function: SLFunction? = null
+        var function: LamaFunction? = null
         if (l.isSingleContext()) {
             function = cachedFunction
 //            if (function == null) {
@@ -40,7 +40,7 @@ class LamaFunctionLiteralNode(
                 cachedFunction = null
             }
             // in the multi-context case we are not allowed to store
-            // SLFunction objects in the AST. Instead we always perform the lookup in the hash map.
+            // LamaFunction objects in the AST. Instead we always perform the lookup in the hash map.
 //            function = LamaContext.get(this).getFunctionRegistry().lookup(functionName, true)
         }
         return function

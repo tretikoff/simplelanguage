@@ -3,7 +3,7 @@ package com.oracle.truffle.lama.nodes.expression
 import com.oracle.truffle.api.frame.VirtualFrame
 import com.oracle.truffle.api.nodes.UnexpectedResultException
 import com.oracle.truffle.api.profiles.ConditionProfile
-import com.oracle.truffle.lama.SLException
+import com.oracle.truffle.lama.LamaException
 import com.oracle.truffle.lama.nodes.LamaExpressionNode
 
 abstract class LamaShortCircuitNode(
@@ -19,7 +19,7 @@ abstract class LamaShortCircuitNode(
         val leftValue = try {
             left.executeLong(frame)
         } catch (e: UnexpectedResultException) {
-            throw SLException.typeError(this, e.result, null)
+            throw LamaException.typeError(this, e.result, null)
         }
         val rightValue: Long = try {
             if (evaluateRightProfile.profile(isEvaluateRight(leftValue != 0L))) {
@@ -28,7 +28,7 @@ abstract class LamaShortCircuitNode(
                 0
             }
         } catch (e: UnexpectedResultException) {
-            throw SLException.typeError(this, leftValue, e.result)
+            throw LamaException.typeError(this, leftValue, e.result)
         }
         return if (execute(leftValue != 0L, rightValue != 0L)) 1L else 0L
     }
