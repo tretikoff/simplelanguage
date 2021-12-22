@@ -22,7 +22,7 @@ class LamaInvokeNode(
     private val library: InteropLibrary = InteropLibrary.getFactory().createDispatched(3)
 
     @ExplodeLoop
-    override fun executeGeneric(frame: VirtualFrame): Any {
+    override fun executeGeneric(frame: VirtualFrame?): Any {
         val function = functionNode.executeGeneric(frame)
 
         CompilerAsserts.compilationConstant<Any>(argumentNodes.size)

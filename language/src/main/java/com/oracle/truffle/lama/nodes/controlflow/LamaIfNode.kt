@@ -15,7 +15,7 @@ class LamaIfNode(
     @Child private val elsePartNode: LamaExpressionNode?,
 ) : LamaExpressionNode() {
     private val condition = ConditionProfile.createCountingProfile()
-    override fun executeVoid(frame: VirtualFrame) {
+    override fun executeVoid(frame: VirtualFrame?) {
         if (condition.profile(evaluateCondition(frame))) {
             thenPartNode.executeVoid(frame)
         } else {
@@ -23,7 +23,7 @@ class LamaIfNode(
         }
     }
 
-    override fun executeGeneric(frame: VirtualFrame): Any {
+    override fun executeGeneric(frame: VirtualFrame?): Any? {
         return if (condition.profile(evaluateCondition(frame))) {
             thenPartNode.executeGeneric(frame)
         } else {
@@ -31,9 +31,9 @@ class LamaIfNode(
         }
     }
 
-    private fun evaluateCondition(frame: VirtualFrame): Boolean {
+    private fun evaluateCondition(frame: VirtualFrame?): Boolean {
         return try {
-            conditionNode.executeBoolean(frame)
+            conditionNode.executeLong(frame) != 0L
         } catch (ex: UnexpectedResultException) {
             throw SLException.typeError(this, ex.result)
         }

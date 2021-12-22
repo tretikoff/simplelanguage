@@ -1,27 +1,30 @@
+package com.oracle.truffle.lama.nodes
 
-package com.oracle.truffle.lama.nodes;
-
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.*;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.instrumentation.GenerateWrapper
+import com.oracle.truffle.api.instrumentation.InstrumentableNode
+import com.oracle.truffle.lama.nodes.LamaStatementNode
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary
+import java.lang.IllegalArgumentException
+import com.oracle.truffle.api.instrumentation.StandardTags.StatementTag
+import com.oracle.truffle.api.instrumentation.StandardTags.RootTag
+import com.oracle.truffle.api.instrumentation.StandardTags.RootBodyTag
+import com.oracle.truffle.api.instrumentation.ProbeNode
+import com.oracle.truffle.api.instrumentation.InstrumentableNode.WrapperNode
+import com.oracle.truffle.api.frame.VirtualFrame
+import com.oracle.truffle.api.instrumentation.Tag
+import com.oracle.truffle.api.nodes.Node
+import com.oracle.truffle.api.nodes.NodeInfo
+import com.oracle.truffle.api.source.SourceSection
 
 @NodeInfo(language = "SL", description = "The abstract base node for all SL statements")
 @GenerateWrapper
-public abstract class LamaStatementNode extends Node implements InstrumentableNode {
-
-    private static final int NO_SOURCE = -1;
-    private static final int UNAVAILABLE_SOURCE = -2;
-
-    private int sourceCharIndex = NO_SOURCE;
-    private int sourceLength;
-
-    private boolean hasStatementTag;
-    private boolean hasRootTag;
+abstract class LamaStatementNode : Node(), InstrumentableNode {
+    var sourceCharIndex = NO_SOURCE
+        private set
+    var sourceLength = 0
+        private set
+    private var hasStatementTag = false
+    private var hasRootTag = false
 
     /*
      * The creation of source section can be implemented lazily by looking up the root node source
@@ -33,135 +36,120 @@ public abstract class LamaStatementNode extends Node implements InstrumentableNo
      *
      * For more details see {@link InstrumentableNode}.
      */
-    @Override
     @TruffleBoundary
-    public final SourceSection getSourceSection() {
+    override fun getSourceSection(): SourceSection? {
         if (sourceCharIndex == NO_SOURCE) {
             // AST node without source
-            return null;
+            return null
         }
-        RootNode rootNode = getRootNode();
-        if (rootNode == null) {
-            // not yet adopted yet
-            return null;
-        }
-        SourceSection rootSourceSection = rootNode.getSourceSection();
-        if (rootSourceSection == null) {
-            return null;
-        }
-        Source source = rootSourceSection.getSource();
-        if (sourceCharIndex == UNAVAILABLE_SOURCE) {
-            if (hasRootTag && !rootSourceSection.isAvailable()) {
-                return rootSourceSection;
+        val rootNode = rootNode
+            ?: // not yet adopted yet
+            return null
+        val rootSourceSection = rootNode.sourceSection ?: return null
+        val source = rootSourceSection.source
+        return if (sourceCharIndex == UNAVAILABLE_SOURCE) {
+            if (hasRootTag && !rootSourceSection.isAvailable) {
+                rootSourceSection
             } else {
-                return source.createUnavailableSection();
+                source.createUnavailableSection()
             }
         } else {
-            return source.createSection(sourceCharIndex, sourceLength);
+            source.createSection(sourceCharIndex, sourceLength)
         }
     }
 
-    public final boolean hasSource() {
-        return sourceCharIndex != NO_SOURCE;
+    fun hasSource(): Boolean {
+        return sourceCharIndex != NO_SOURCE
     }
 
-    public final boolean isInstrumentable() {
-        return hasSource();
+    override fun isInstrumentable(): Boolean {
+        return hasSource()
     }
 
-    public final int getSourceCharIndex() {
-        return sourceCharIndex;
-    }
-
-    public final int getSourceEndIndex() {
-        return sourceCharIndex + sourceLength;
-    }
-
-    public final int getSourceLength() {
-        return sourceLength;
-    }
+    val sourceEndIndex: Int
+        get() = sourceCharIndex + sourceLength
 
     // invoked by the parser to set the source
-    public final void setSourceSection(int charIndex, int length) {
-        assert sourceCharIndex == NO_SOURCE : "source must only be set once";
-        if (charIndex < 0) {
-            throw new IllegalArgumentException("charIndex < 0");
-        } else if (length < 0) {
-            throw new IllegalArgumentException("length < 0");
+    fun setSourceSection(charIndex: Int, length: Int) {
+        assert(sourceCharIndex == NO_SOURCE) { "source must only be set once" }
+        require(charIndex >= 0) { "charIndex < 0" }
+        require(length >= 0) { "length < 0" }
+        sourceCharIndex = charIndex
+        sourceLength = length
+    }
+
+    fun setUnavailableSourceSection() {
+        assert(sourceCharIndex == NO_SOURCE) { "source must only be set once" }
+        sourceCharIndex = UNAVAILABLE_SOURCE
+    }
+
+    override fun hasTag(tag: Class<out Tag?>): Boolean {
+        if (tag == StatementTag::class.java) {
+            return hasStatementTag
+        } else if (tag == RootTag::class.java || tag == RootBodyTag::class.java) {
+            return hasRootTag
         }
-        this.sourceCharIndex = charIndex;
-        this.sourceLength = length;
+        return false
     }
 
-    public final void setUnavailableSourceSection() {
-        assert sourceCharIndex == NO_SOURCE : "source must only be set once";
-        this.sourceCharIndex = UNAVAILABLE_SOURCE;
-    }
-
-    public boolean hasTag(Class<? extends Tag> tag) {
-        if (tag == StandardTags.StatementTag.class) {
-            return hasStatementTag;
-        } else if (tag == StandardTags.RootTag.class || tag == StandardTags.RootBodyTag.class) {
-            return hasRootTag;
-        }
-        return false;
-    }
-
-    public WrapperNode createWrapper(ProbeNode probe) {
-        return new LamaStatementNodeWrapper(this, probe);
+    override fun createWrapper(probe: ProbeNode): WrapperNode? {
+//        return new LamaStatementNodeWrapper(this, probe);
+        return null
     }
 
     /**
      * Execute this node as as statement, where no return value is necessary.
      */
-    public abstract void executeVoid(VirtualFrame frame);
+    abstract fun executeVoid(frame: VirtualFrame?)
 
     /**
-     * Marks this node as being a {@link StandardTags.StatementTag} for instrumentation purposes.
+     * Marks this node as being a [StandardTags.StatementTag] for instrumentation purposes.
      */
-    public final void addStatementTag() {
-        hasStatementTag = true;
+    fun addStatementTag() {
+        hasStatementTag = true
     }
 
     /**
-     * Marks this node as being a {@link StandardTags.RootTag} and {@link StandardTags.RootBodyTag}
+     * Marks this node as being a [StandardTags.RootTag] and [StandardTags.RootBodyTag]
      * for instrumentation purposes.
      */
-    public final void addRootTag() {
-        hasRootTag = true;
+    fun addRootTag() {
+        hasRootTag = true
     }
 
-    @Override
-    public String toString() {
-        return formatSourceSection(this);
+    override fun toString(): String {
+        return formatSourceSection(this)
     }
 
-    /**
-     * Formats a source section of a node in human readable form. If no source section could be
-     * found it looks up the parent hierarchy until it finds a source section. Nodes where this was
-     * required append a <code>'~'</code> at the end.
-     *
-     * @param node the node to format.
-     * @return a formatted source section string
-     */
-    public static String formatSourceSection(Node node) {
-        if (node == null) {
-            return "<unknown>";
-        }
-        SourceSection section = node.getSourceSection();
-        boolean estimated = false;
-        if (section == null) {
-            section = node.getEncapsulatingSourceSection();
-            estimated = true;
-        }
+    companion object {
+        private const val NO_SOURCE = -1
+        private const val UNAVAILABLE_SOURCE = -2
 
-        if (section == null || section.getSource() == null) {
-            return "<unknown source>";
-        } else {
-            String sourceName = section.getSource().getName();
-            int startLine = section.getStartLine();
-            return String.format("%s:%d%s", sourceName, startLine, estimated ? "~" : "");
+        /**
+         * Formats a source section of a node in human readable form. If no source section could be
+         * found it looks up the parent hierarchy until it finds a source section. Nodes where this was
+         * required append a `'~'` at the end.
+         *
+         * @param node the node to format.
+         * @return a formatted source section string
+         */
+        fun formatSourceSection(node: Node?): String {
+            if (node == null) {
+                return "<unknown>"
+            }
+            var section = node.sourceSection
+            var estimated = false
+            if (section == null) {
+                section = node.encapsulatingSourceSection
+                estimated = true
+            }
+            return if (section == null || section.source == null) {
+                "<unknown source>"
+            } else {
+                val sourceName = section.source.name
+                val startLine = section.startLine
+                String.format("%s:%d%s", sourceName, startLine, if (estimated) "~" else "")
+            }
         }
     }
-
 }

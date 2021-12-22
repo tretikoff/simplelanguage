@@ -44,33 +44,18 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory
 import com.oracle.truffle.api.dsl.NodeChild
 import com.oracle.truffle.api.dsl.UnsupportedSpecializationException
 import com.oracle.truffle.api.frame.VirtualFrame
-import com.oracle.truffle.api.nodes.UnexpectedResultException
 import com.oracle.truffle.lama.SLException
 import com.oracle.truffle.lama.nodes.LamaExpressionNode
 
 @NodeChild(value = "arguments", type = Array<LamaExpressionNode>::class)
 @GenerateNodeFactory
 abstract class LamaBuiltinNode : LamaExpressionNode() {
-    override fun executeGeneric(frame: VirtualFrame): Any {
+    override fun executeGeneric(frame: VirtualFrame?): Any {
         return try {
             execute(frame)
         } catch (e: UnsupportedSpecializationException) {
             throw SLException.typeError(e.node, *e.suppliedValues)
         }
-    }
-
-    @Throws(UnexpectedResultException::class)
-    override fun executeBoolean(frame: VirtualFrame): Boolean {
-        return super.executeBoolean(frame)
-    }
-
-    @Throws(UnexpectedResultException::class)
-    override fun executeLong(frame: VirtualFrame): Long {
-        return super.executeLong(frame)
-    }
-
-    override fun executeVoid(frame: VirtualFrame) {
-        super.executeVoid(frame)
     }
 
     protected abstract fun execute(frame: VirtualFrame?): Any
