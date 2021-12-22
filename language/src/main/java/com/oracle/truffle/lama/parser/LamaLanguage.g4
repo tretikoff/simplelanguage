@@ -1,5 +1,24 @@
-grammar Lama;
+grammar LamaLanguage;
 
+@lexer::header {
+}
+
+@parser::members {
+private SLNodeFactory factory;
+private Source source;
+
+
+public static SLEvalRootNode parseLama(LamaLanguage language, Source source) {
+    LamaLanguageLexer lexer = new LamaLanguageLexer(CharStreams.fromString(source.getCharacters().toString()));
+    LamaLanguageParser parser = new LamaLanguageParser(new CommonTokenStream(lexer));
+    lexer.removeErrorListeners();
+    parser.removeErrorListeners();
+    parser.factory = new SLNodeFactory();
+    parser.source = source;
+    return parser.lama().result;
+}
+
+}
 
 after:'after';
 esac:'esac';

@@ -91,7 +91,8 @@ public final class SLEvalRootNode extends RootNode {
             /* Conversion of arguments to types understood by SL. */
             Object[] arguments = frame.getArguments();
             for (int i = 0; i < arguments.length; i++) {
-                arguments[i] = LamaContext.fromForeignValue(arguments[i]);
+                // todo
+//                arguments[i] = LamaContext.fromForeignValue(arguments[i]);
             }
             return mainCallNode.call(arguments);
         }
@@ -99,7 +100,7 @@ public final class SLEvalRootNode extends RootNode {
 
     @TruffleBoundary
     private void registerFunctions() {
-        LamaContext.Companion.get(this).getFunctionRegistry().register(functions);
+         LamaContext.Companion.getFunctionsRegistry(this).getValue().register(functions);
     }
 
 }

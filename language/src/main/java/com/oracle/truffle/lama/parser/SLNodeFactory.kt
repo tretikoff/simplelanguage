@@ -165,9 +165,8 @@ class SLNodeFactory {
         if (leftNode == null || rightNode == null) {
             return null
         }
-        val result: LamaExpressionNode
-        result = when (opToken.text) {
-            "+" -> LamaAddNode().create(leftNode, rightNode)
+        val result: LamaExpressionNode = when (opToken.text) {
+            "+" -> LamaAddNodeGen.create(leftNode, rightNode)
             "*" -> LamaMulNodeGen.create(leftNode, rightNode)
             "/" -> LamaDivNodeGen.create(leftNode, rightNode)
             "-" -> LamaSubNodeGen.create(leftNode, rightNode)

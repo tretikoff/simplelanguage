@@ -16,8 +16,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.lama.LamaLanguage;
 import com.oracle.truffle.lama.builtins.LamaBuiltinNode;
-import com.oracle.truffle.lama.nodes.controlflow.SLBlockNode;
-import com.oracle.truffle.lama.nodes.controlflow.SLFunctionBodyNode;
 import com.oracle.truffle.lama.nodes.local.LamaWriteLocalVariableNode;
 import com.oracle.truffle.lama.nodes.local.LamaReadArgumentNode;
 import com.oracle.truffle.lama.runtime.LamaContext;
@@ -106,7 +104,8 @@ public class SLRootNode extends RootNode {
                 } else if (wn != null && (node instanceof LamaReadArgumentNode)) {
                     writeArgNodes.add(wn);
                     return true;
-                } else if (wn == null && (node instanceof LamaStatementNode && !(node instanceof SLBlockNode || node instanceof SLFunctionBodyNode))) {
+//                } else if (wn == null && (node instanceof LamaStatementNode && !(node instanceof SLBlockNode || node instanceof SLFunctionBodyNode))) {
+                } else if (wn == null) {
                     // A different SL node - we're done.
                     return false;
                 } else {
