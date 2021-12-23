@@ -3,19 +3,28 @@ grammar LamaLanguage;
 @lexer::header {
 }
 
+@parser::header {
+import java.util.*;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.lama.LamaLanguage;
+import com.oracle.truffle.lama.parser.LamaNodeFactory;
+import com.oracle.truffle.lama.nodes.SLRootNode;
+}
+
 @parser::members {
-private SLNodeFactory factory;
+private LamaNodeFactory factory;
 private Source source;
 
 
-public static SLEvalRootNode parseLama(LamaLanguage language, Source source) {
+public static SLRootNode parseLama(LamaLanguage language, Source source) {
     LamaLanguageLexer lexer = new LamaLanguageLexer(CharStreams.fromString(source.getCharacters().toString()));
     LamaLanguageParser parser = new LamaLanguageParser(new CommonTokenStream(lexer));
     lexer.removeErrorListeners();
     parser.removeErrorListeners();
-    parser.factory = new SLNodeFactory();
+    parser.factory = new LamaNodeFactory();
     parser.source = source;
-    return parser.lama().result;
+    return parser.compilationUnit();
 }
 
 }
@@ -29,27 +38,19 @@ eta:'eta';
 infixr:'infixr';
 then:'then';
 at:'at';
-false:'false';
 lazy:'lazy';
-true:'true';
 before:'before';
 fi:'fi';
 od:'od';
 val:'val';
 box:'box';
-for:'for';
 of:'of';
 var:'var';
-case:'case';
 fun:'fun';
-while:'while';
-do:'do';
-if:'if';
 sexp:'sexp';
 elif:'elif';
 //import:'import';
 skip:'skip';
-else:'else';
 infix:'infix';
 str:'str';
 
@@ -105,7 +106,7 @@ compilationUnit : importRule * scopeExpression;
 
 importRule : 'import' Uident ';';
 
-scopeExpression : definition * expression? ;
+scopeExpression : definition* expression ;
 
 definition :
     variableDefinition
@@ -156,7 +157,8 @@ multiplicative : customOperatorExpression ( ('*' | '/' | '%') customOperatorExpr
 
 customOperatorExpression : dotNotation ( infixop dotNotation ) * ;
 
-dotNotation : ((primary | functionCall) | arrayIndexing) ( '.' (functionCall | Lident) ) * ;
+// here's bug
+dotNotation : ((primary | functionCall)? | arrayIndexing) ( '.' (functionCall | Lident) ) * ;
 
 
 postfixExpression :
@@ -166,10 +168,10 @@ postfixExpression :
 
 functionCall :
 //    postfixExpression '(' ( expression ( ',' expression ) * )? ')' {extends=postfixExpression}; // was
-    primary '(' ( expression ( ',' expression ) * )? ')' {extends=postfixExpression};
+    primary '(' ( expression ( ',' expression ) * )? ')' ;
 
 arrayIndexing :
-    postfixExpression '[' expression ']' {extends=postfixExpression};
+    postfixExpression '[' expression ']'; //{extends=postfixExpression};
 
 lazyExpression : lazy basicExpression;
 
@@ -182,8 +184,8 @@ primary :
     String                  |
     Char                    |
     Lident                  |
-    true                    |
-    false                   |
+    'true'                    |
+    'false'                   |
     infix infixop           |
     fun '(' functionArguments ')' functionBody |
     skip                    |
@@ -198,8 +200,8 @@ primary :
     whileDoExpression       |
     doWhileExpression       |
     forExpression           |
-    caseExpression
-    {extends=postfixExpression};
+    caseExpression;
+    //{extends=postfixExpression};
 
 listExpression :
     '{' ( expression ( ',' expression ) * )? '}';
@@ -211,20 +213,20 @@ sExpression :
     Uident ( '(' expression ( ( ',' expression ) * )? ')' )? ;
 
 ifExpression :
-    if expression then scopeExpression ( elsePart )? fi;
+    'if' expression then scopeExpression ( elsePart )? fi;
 
 elsePart :
     elif expression then scopeExpression ( elsePart )? |
-    else scopeExpression;
+    'else' scopeExpression;
 
-whileDoExpression : while expression do scopeExpression od;
+whileDoExpression : 'while' expression 'do' scopeExpression od;
 
-doWhileExpression : do scopeExpression while expression od;
+doWhileExpression : 'do' scopeExpression 'while' expression od;
 
 forExpression :
-    for scopeExpression ',' expression ',' expression do scopeExpression od;
+    'for' scopeExpression ',' expression ',' expression 'do' scopeExpression od;
 
-caseExpression : case expression of caseBranches esac;
+caseExpression : 'case' expression of caseBranches esac;
 
 caseBranches : caseBranch ( ( alt caseBranch ) * )?;
 
@@ -245,8 +247,8 @@ simplePattern :
     | ( '-' )? Decimal
     | String
     | Char
-    | true
-    | false
+    | 'true'
+    | 'false'
     | sharp box
     | sharp val
     | sharp str
