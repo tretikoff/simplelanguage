@@ -246,6 +246,14 @@ public class LamaNodeFactory {
         return result;
     }
 
+    public LamaExpressionNode createNumericLiteral(Token literalToken, Boolean val) {
+        LamaExpressionNode result;
+        result = new LamaLongLiteralNode(val ? 1 : 0);
+        srcFromToken(result, literalToken);
+        result.addExpressionTag();
+        return result;
+    }
+
     public LamaExpressionNode createNumericLiteral(Token literalToken) {
         LamaExpressionNode result;
         result = new LamaLongLiteralNode(Long.parseLong(literalToken.getText()));

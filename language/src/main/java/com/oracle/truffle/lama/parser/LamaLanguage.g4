@@ -108,31 +108,63 @@ Char : ('^') | STRING_CHAR;
 
 importRule : 'import' Uident ';';
 
-scopeExpression returns [LamaExpressionNode result]
- : definition* expression ;
+scopeExpression returns [LamaExpressionNode res]
+ :
+ { factory.enterScope();
+   List<LamaExpressionNode> body = new ArrayList<>(); }
+ (d=definition { body.addAll($d.res); })* e=expression {body.addAll($e.res);};
 
-definition :
-    variableDefinition
-    | functionDefinition
-    | infixDefinition;
+definition returns [List<LamaExpressionNode> res]:
+    v=variableDefinition {$res = $v.res;}
+    | f=functionDefinition {
+        $res = new ArrayList<>();
+        $res.add($f.res);
+    }
+    | i=infixDefinition {
+        $res = new ArrayList<>();
+        $res.add($i.res);
+    };
 
-variableDefinition : ( var | 'public' ) variableDefinitionSeq ';';
+variableDefinition returns [List<LamaExpressionNode> res]: ( var | 'public' ) vd=variableDefinitionSeq ';' {
+    $res = $vd.res;
+};
 
-variableDefinitionSeq : variableDefinitionItem ( ',' variableDefinitionItem ) * ;
+variableDefinitionSeq returns [List<LamaExpressionNode> res]:
+{$res = newArrayList<>();}
+d=variableDefinitionItem ( ',' d2=variableDefinitionItem ) * {
+    if ($d.res != null) { $res.add($d.res); }
+    if ($d2.res != null) { $res.add($d2.res); }
+};
 
-variableDefinitionItem : Lident ('=' basicExpression)? ;
+variableDefinitionItem returns [LamaExpressionNode res] : n=Lident ('=' e=basicExpression)? {
+    factory.registerVariable($n.getText());
+    $res = factory.createAssignment(factory.createStringLiteral($n, false), $e.res);
+};
 
-functionDefinition : 'public'?  fun Lident '(' functionArguments ')' functionBody;
+functionDefinition returns [LamaExpressionNode res]: 'public'?  fun n=Lident '(' args=functionArguments ')' b=functionBody {
+    $res = factory.createCall($n, $args.res, $b.res);
+};
 
-functionArguments : ( functionArgument ( ',' functionArgument ) * )?;
+functionArguments returns [List<LamaExpressionNode> res]: {$res = new ArrayList<>();} ( a=functionArgument ( ',' a2=functionArgument ) * )? {
+    if ($a.res != null) { $res.add($a.res); }
+    if ($a2.res != null) { $res.add($a2.res); }
+};
 
-functionArgument : pattern;
+functionArgument returns [LamaExpressionNode res]: p=pattern {
+    if ($p.res != null) {
+        $res = $p.res;
+    }
+};
 
-functionBody : '{' scopeExpression '}';
+functionBody returns [LamaExpressionNode res]: '{' s=scopeExpression '}' {$res = $s.res;};
 
-infixDefinition : infixHead '(' functionArguments ')' functionBody;
+infixDefinition returns [LamaExpressionNode res]: n=infixHead '(' args=functionArguments ')' b=functionBody {
+    $res = factory.createCall($n.res, $args.res, $b.res);
+};
 
-infixHead : 'public'? infixity infixop level;
+infixHead returns [LamaExpressionNode res]: 'public'? infixity op=infixop level {
+    $res = factory.createStringLiteral(op, false);
+};
 
 
 infixity :
@@ -142,15 +174,40 @@ infixity :
 
 level : ( at | before | after )? infixop;
 
-expression : basicExpression ( ';' expression )?;
+expression returns [List<LamaExpressionNode> res]: {
+    $res = new ArrayList<>();
+} s=basicExpression ( ';' s2=expression )? {
+    $res.addAll($s.res);
+    if ($s2.res != null) $res.addAll($s2.res);
+};
 
-basicExpression : disjunction;
+basicExpression returns [List<LamaExpressionNode> res]: d=disjunction {
+    $res = $d.res;
+};
 
-disjunction : conjunction ( '!!' conjunction ) *;
+disjunction returns [List<LamaExpressionNode> res] : {
+    $res = new ArrayList<>();
+}
+c=conjunction {
+  $res.addAll($c.res);
+}( '!!' c2=conjunction ) * {
+   if ($c2.res != null) {
+     $res.addAll($c2.res);
+   }
+};
 
-conjunction : equality ( '&&' equality ) * ;
+conjunction returns [List<LamaExpressionNode> res] : {
+    $res = new ArrayList<>();
+}
+eq=equality {
+    $res.addAll($eq.res);
+} ( '&&' eq2=equality ) * {
+  if ($eq2.res != null) {
+    $res.addAll($eq2.res);
+  }
+};
 
-equality : comparison (('==' | '!=') comparison ) * ;
+equality returns [List<LamaExpressionNode> res]: comparison (('==' | '!=') comparison ) * ;
 
 comparison : additive ( ('<' | '>' | '<=' | '>=') additive ) * ;
 
@@ -161,7 +218,7 @@ multiplicative : customOperatorExpression ( ('*' | '/' | '%') customOperatorExpr
 customOperatorExpression : dotNotation ( infixop dotNotation ) * ;
 
 // here's bug
-dotNotation : ((primary | functionCall)? | arrayIndexing) ( '.' (functionCall | Lident) ) * ;
+dotNotation : (postfixExpression? | arrayIndexing) ( '.' (functionCall | Lident) ) * ;
 
 
 postfixExpression :
@@ -171,7 +228,7 @@ postfixExpression :
 
 functionCall :
 //    postfixExpression '(' ( expression ( ',' expression ) * )? ')' {extends=postfixExpression}; // was
-    primary '(' ( expression ( ',' expression ) * )? ')' ;
+    primary ('[' expression ']')? '(' ( expression ( ',' expression ) * )? ')' ;
 
 arrayIndexing :
     postfixExpression '[' expression ']'; //{extends=postfixExpression};
@@ -235,30 +292,54 @@ caseBranches : caseBranch ( ( alt caseBranch ) * )?;
 
 caseBranch : pattern hence scopeExpression;
 
-pattern :
-    consPattern
-    | simplePattern;
+pattern returns [LamaExpressionNode res]:
+    cp=consPattern { if ($cp.res != null) $res = $cp.res;}
+    | sp=simplePattern { if ($sp.res != null) $res = $sp.res;};
+// todo: tmp null
+consPattern returns [LamaExpressionNode res]: simplePattern  ':' pattern {return null;};
 
-consPattern : simplePattern  ':' pattern;
-
-simplePattern :
+simplePattern returns [LamaExpressionNode res]:
     wildcardPattern
     | sExprPattern
     | arrayPattern
     | listPattern
-    | Lident ( '@' pattern )?
-    | ( '-' )? Decimal
-    | String
-    | Char
-    | 'true'
-    | 'false'
-    | sharp box
-    | sharp val
-    | sharp str
-    | sharp array
-    | sharp sexp
-    | sharp fun
-    | '(' pattern ')';
+    | l=Lident ( '@' s=pattern )? {
+        $res = factory.createStringLiteral($l, false);
+    }
+    | ( '-' )? d=Decimal {
+        $res = factory.createNumericLiteral($d);
+    }
+    | p=String {
+        $res = factory.createStringLiteral($p, false);
+    }
+    | p=Char {
+        $res = factory.createStringLiteral($p, false);
+    }
+    | p='true' {
+        $res = factory.createNumericLiteral($p, true);
+    }
+    | p='false' {
+        $res = factory.createNumericLiteral($p, false);
+    }
+    | sharp a=box /*{
+        $res = factory.createStringLiteral($a, false);
+    }*/
+    | sharp b=val /*{
+        $res = factory.createStringLiteral($b, false);
+    }*/
+    | sharp c=str /*{
+         $res = factory.createStringLiteral($c, false);
+    }*/
+    | sharp f=array /*{
+        $res = factory.createStringLiteral($f, false);
+    }*/
+    | sharp g=sexp /*{
+        $res = factory.createStringLiteral($g, false);
+    }*/
+    | sharp z=fun /*{
+        $res = factory.createStringLiteral($z, false);
+    }*/
+    | '(' s=pattern ')' {$res = $s.res;};
 
 wildcardPattern : '_';
 
