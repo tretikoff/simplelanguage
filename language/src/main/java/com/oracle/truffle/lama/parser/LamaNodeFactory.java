@@ -37,6 +37,10 @@ public class LamaNodeFactory {
                 locals.putAll(outer.locals);
             }
         }
+
+        public void clear() {
+            locals.clear();
+        }
     }
 
 
@@ -75,6 +79,16 @@ public class LamaNodeFactory {
         return ifNode;
     }
 
+
+    public void enterScope() {
+        lexicalScope = new LexicalScope(lexicalScope);
+    }
+
+    public void endScope() {
+        lexicalScope.clear();
+        lexicalScope = lexicalScope.outer;
+    }
+
     /**
      * Returns the corresponding subclass of {@link LamaExpressionNode} for binary expressions. </br>
      * These nodes are currently not instrumented.
@@ -94,33 +108,33 @@ public class LamaNodeFactory {
             case "+":
                 result = LamaAddNodeGen.create(leftNode, rightNode);
                 break;
-//            case "*": // TODO rewrite to java
-//                result = LamaMulNodeGen.create(leftNode, rightNode);
-//                break;
-//            case "/":
-//                result = LamaDivNodeGen.create(leftNode, rightNode);
-//                break;
-//            case "-":
-//                result = LamaSubNodeGen.create(leftNode, rightNode);
-//                break;
-//            case "<":
-//                result = LamaLessThanNodeGen.create(leftNode, rightNode);
-//                break;
-//            case "<=":
-//                result = LamaLessOrEqualNodeGen.create(leftNode, rightNode);
-//                break;
-//            case ">":
-//                result = LamaLogicalNotNodeGen.create(LamaLessOrEqualNodeGen.create(leftNode, rightNode));
-//                break;
-//            case ">=":
-//                result = LamaLogicalNotNodeGen.create(LamaLessThanNodeGen.create(leftNode, rightNode));
-//                break;
-//            case "==":
-//                result = LamaEqualNodeGen.create(leftNode, rightNode);
-//                break;
-//            case "!=":
-//                result = LamaLogicalNotNodeGen.create(LamaEqualNodeGen.create(leftNode, rightNode));
-//                break;
+            case "*":
+                result = LamaMulNodeGen.create(leftNode, rightNode);
+                break;
+            case "/":
+                result = LamaDivNodeGen.create(leftNode, rightNode);
+                break;
+            case "-":
+                result = LamaSubNodeGen.create(leftNode, rightNode);
+                break;
+            case "<":
+                result = LamaLessThanNodeGen.create(leftNode, rightNode);
+                break;
+            case "<=":
+                result = LamaLessOrEqualNodeGen.create(leftNode, rightNode);
+                break;
+            case ">":
+                result = LamaLogicalNotNodeGen.create(LamaLessOrEqualNodeGen.create(leftNode, rightNode));
+                break;
+            case ">=":
+                result = LamaLogicalNotNodeGen.create(LamaLessThanNodeGen.create(leftNode, rightNode));
+                break;
+            case "==":
+                result = LamaEqualNodeGen.create(leftNode, rightNode);
+                break;
+            case "!=":
+                result = LamaLogicalNotNodeGen.create(LamaEqualNodeGen.create(leftNode, rightNode));
+                break;
             case "&&":
                 result = new LamaLogicalAndNode(leftNode, rightNode);
                 break;

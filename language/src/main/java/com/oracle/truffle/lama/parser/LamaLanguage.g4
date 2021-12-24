@@ -10,6 +10,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.lama.LamaLanguage;
 import com.oracle.truffle.lama.parser.LamaNodeFactory;
 import com.oracle.truffle.lama.nodes.SLRootNode;
+import com.oracle.truffle.lama.nodes.*;
 }
 
 @parser::members {
@@ -24,10 +25,12 @@ public static SLRootNode parseLama(LamaLanguage language, Source source) {
     parser.removeErrorListeners();
     parser.factory = new LamaNodeFactory();
     parser.source = source;
-    return parser.compilationUnit();
+    return parser.compilationUnit().res;
 }
 
 }
+compilationUnit returns [SLRootNode res]
+: importRule * scopeExpression EOF;
 
 after:'after';
 esac:'esac';
@@ -102,11 +105,11 @@ Char : ('^') | STRING_CHAR;
 
 
 
-compilationUnit : importRule * scopeExpression;
 
 importRule : 'import' Uident ';';
 
-scopeExpression : definition* expression ;
+scopeExpression returns [LamaExpressionNode result]
+ : definition* expression ;
 
 definition :
     variableDefinition
