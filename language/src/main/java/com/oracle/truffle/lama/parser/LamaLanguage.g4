@@ -83,7 +83,7 @@ decimal:'regexp:[0-9]+';
 string:'regexp:\"([^\"]|\"\")*\"';
 //char:'regexp:([^']|''|\\n|\\t)';*/
 
-infixop:'regexp:[+*/%$#@!|&\^?<>:=\\-]+'; // todo
+infixop:'regexp:[+*/%$#@!|&\\^?<>:=\\-]+'; // todo
 
 
 Space : [ \t\r\n\u000C]+ -> skip;
@@ -160,10 +160,10 @@ functionBody returns [LamaExpressionNode res]: '{' s=scopeExpression '}' {$res =
 infixDefinition returns [LamaExpressionNode res]: n=infixHead '(' args=functionArguments ')' b=functionBody {
     $res = factory.createCall(null, $b.res, $args.res, $b.res);
 };
-
-infixHead returns [LamaExpressionNode res]: 'public'? infixity op=infixop level {
-    $res = factory.createStringLiteral(op, false);
-};
+                                                               // not sure if it works
+infixHead returns [LamaExpressionNode res]: 'public'? infixity op='regexp:[+*/%$#@!|&\\^?<>:=\\-]+' {
+    $res = factory.createStringLiteral($op, false);
+} level;
 
 
 infixity :
@@ -240,7 +240,7 @@ dotNotation returns [LamaExpressionNode res]: p=postfixExpression? {
 } ( '.' {List<LamaExpressionNode> args = new ArrayList<>(); args.add($res); } (c=functionCall | li=Lident) )+ {
     Token stop = $li;
     if ($c.res != null) {
-        args.addAll($c.res.nodes);
+        args.add($c.res.nodes);
         stop = $c.res.nodes.end;
     }
     $res = factory.createCall(factory.createRead(factory.createStringLiteral($li, false)), args, stop);
@@ -263,17 +263,17 @@ functionCall returns [LamaExpressionNode res]:
     p=primary { $res = $p.res; } ('[' el=expression ']')? {
         if ($el.res != null) $res = factory.createElem($res, $el.res);
     } '(' ( a=expression {
-        args.addAll($a.res);
+        args.add($a.res);
         stop = $a.res.nodes.end;
     } ( ',' a2=expression ) * )? ')' {
-        args.addAll($a2.res);
+        args.add($a2.res);
         stop = $a2.res.nodes.end;
         $res = factory.createCall(factory.createRead(factory.createStringLiteral($p.res, false)), args, stop);
     };
 
 arrayIndexing returns [LamaExpressionNode res]:
     exp=postfixExpression {$res = $exp.res;} '[' in=expression ']' {
-        $res = factory.createReference($res, $in.res)
+        $res = factory.createReference($res, $in.res);
     }; //{extends=postfixExpression};
 
 lazyExpression : lazy basicExpression;

@@ -72,7 +72,7 @@ public class LamaNodeFactory {
 
     private LexicalScope lexicalScope;
 
-    public LamaStatementNode createWhile(Token whileToken, LamaExpressionNode conditionNode, LamaExpressionNode bodyNode) {
+    public LamaExpressionNode createWhile(Token whileToken, LamaExpressionNode conditionNode, LamaExpressionNode bodyNode) {
         if (conditionNode == null || bodyNode == null) {
             return null;
         }
@@ -89,7 +89,12 @@ public class LamaNodeFactory {
         lexicalScope.addOne(name, null);
     }
 
-    public LamaStatementNode createFor(Token forToken, LamaExpressionNode initNode, LamaExpressionNode conditionNode, LamaExpressionNode incrementNode, LamaExpressionNode bodyNode) {
+    public LamaExpressionNode createElem(LamaExpressionNode lhs, LamaExpressionNode ind) {
+        return LamaElementNodeGen.create(lhs, ind);
+    }
+
+
+    public LamaExpressionNode createFor(Token forToken, LamaExpressionNode initNode, LamaExpressionNode conditionNode, LamaExpressionNode incrementNode, LamaExpressionNode bodyNode) {
         if (conditionNode == null || bodyNode == null || initNode == null) {
             return null;
         }
@@ -104,7 +109,7 @@ public class LamaNodeFactory {
         return createWhile(forToken, conditionNode, bodyBlock);
     }
 
-    public LamaStatementNode createIf(Token ifToken, LamaExpressionNode conditionNode, LamaExpressionNode thenPartNode, LamaExpressionNode elsePartNode) {
+    public LamaExpressionNode createIf(Token ifToken, LamaExpressionNode conditionNode, LamaExpressionNode thenPartNode, LamaExpressionNode elsePartNode) {
         if (conditionNode == null || thenPartNode == null) {
             return null;
         }
