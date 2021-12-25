@@ -5,15 +5,14 @@ import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.lama.nodes.LamaExpressionNode;
 import com.oracle.truffle.lama.nodes.LamaStatementNode;
+import com.oracle.truffle.lama.nodes.controlflow.LamaBlockNode;
 import com.oracle.truffle.lama.nodes.controlflow.LamaIfNode;
 import com.oracle.truffle.lama.nodes.controlflow.LamaWhileNode;
 import com.oracle.truffle.lama.nodes.expression.*;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.Token;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Helper class used by the Lama {@link Parser} to create nodes. The code is factored out of the
@@ -90,11 +89,19 @@ public class LamaNodeFactory {
         lexicalScope.addOne(name, null);
     }
 
-    public LamaStatementNode createFor(Token forToken, LamaExpressionNode initNode, LamaExpressionNode conditionNode, LamaExpressionNode bodyNode) {
+    public LamaStatementNode createFor(Token forToken, LamaExpressionNode initNode, LamaExpressionNode conditionNode, LamaExpressionNode incrementNode, LamaExpressionNode bodyNode) {
         if (conditionNode == null || bodyNode == null || initNode == null) {
             return null;
         }
-        return createWhile(forToken, conditionNode, bodyNode);
+        final int start = forToken.getStartIndex();
+        final int end = bodyNode.getSourceEndIndex();
+
+        List<LamaExpressionNode> bodyBlockExpressions = new ArrayList<>();
+        bodyBlockExpressions.add(bodyNode);
+        bodyBlockExpressions.add(incrementNode);
+        LamaExpressionNode bodyBlock = consumeBlock(bodyBlockExpressions, start, end);
+
+        return createWhile(forToken, conditionNode, bodyBlock);
     }
 
     public LamaStatementNode createIf(Token ifToken, LamaExpressionNode conditionNode, LamaExpressionNode thenPartNode, LamaExpressionNode elsePartNode) {
@@ -279,6 +286,24 @@ public class LamaNodeFactory {
         result.setSourceSection(nameNode.getSourceCharIndex(), nameNode.getSourceLength());
         result.addExpressionTag();
         return result;
+    }
+
+    public LamaExpressionNode consumeBlock(List<LamaExpressionNode> seq, int pos, int length) {
+        List<LamaExpressionNode> toFlatList = new ArrayList<>();
+        doFlat(seq, toFlatList);
+        LamaBlockNode blockNode = new LamaBlockNode(toFlatList.toArray(new LamaExpressionNode[0]));
+        blockNode.setSourceSection(pos, length);
+        return blockNode;
+    }
+
+    private void doFlat(Collection<? extends LamaExpressionNode> data, List<LamaExpressionNode> ans) {
+        for (LamaExpressionNode elem : data) {
+            if (elem instanceof LamaBlockNode) {
+                doFlat(((LamaBlockNode) elem).getStatements(), ans);
+            } else {
+                ans.add(elem);
+            }
+        }
     }
 
     public LamaExpressionNode createStringLiteral(Token literalToken, boolean removeQuotes) {

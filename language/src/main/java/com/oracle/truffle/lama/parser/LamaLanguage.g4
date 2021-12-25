@@ -111,7 +111,7 @@ scopeExpression returns [LamaExpressionNode res]
  :
  { factory.enterScope();
    List<LamaExpressionNode> body = new ArrayList<>(); }
- (d=definition { body.addAll($d.res); })* e=expression {body.addAll($e.res);};
+ (d=definition { body.addAll($d.res); })* e=expression {body.add($e.res);};
 
 definition returns [List<LamaExpressionNode> res]:
     v=variableDefinition {$res = $v.res;}
@@ -173,11 +173,14 @@ infixity :
 
 level : ( at | before | after )? infixop;
 
-expression returns [List<LamaExpressionNode> res]: {
-    $res = new ArrayList<>();
-} s=basicExpression ( ';' s2=expression )? {
-    $res.add($s.res);
-    if ($s2.res != null) $res.add($s2.res);
+expression returns [LamaExpressionNode res]: {
+    ArrayList<LamaExpressionNode> data = new ArrayList<>();
+    int start = 0;                             // perhaps it's bad
+} s=basicExpression {data.add($s.res); start = $s.res.getSourceCharIndex();} ( ';' s2=expression )? {
+    if ($s2.res != null) data.add($s2.res);
+    $res = factory.consumeBlock(data, start, start*2 + 1);
+    data.clear();
+    data.add($res);
 };
 
 basicExpression returns [LamaExpressionNode res]: d=disjunction {
