@@ -139,9 +139,10 @@ variableDefinitionItem returns [LamaExpressionNode res] : n=Lident ('=' e=basicE
     factory.registerVar($n.getText());
     $res = factory.createAssignment(factory.createStringLiteral($n, false), $e.res);
 };
-
+// not call here
 functionDefinition returns [LamaExpressionNode res]: 'public'?  fun n=Lident e='(' args=functionArguments ')' b=functionBody {
-    $res = factory.createCall($n.getText(), $b.res, $args.res, $e);
+    $res = factory.defineFunction($n.getText(), $e, $args.res, $b.res);
+    //$res = factory.createCall();
 };
 
 functionArguments returns [List<LamaExpressionNode> res]: {$res = new ArrayList<>();} ( a=functionArgument ( ',' a2=functionArgument ) * )? {
@@ -157,8 +158,8 @@ functionArgument returns [LamaExpressionNode res]: p=pattern {
 
 functionBody returns [LamaExpressionNode res]: '{' s=scopeExpression '}' {$res = $s.res;};
 
-infixDefinition returns [LamaExpressionNode res]: n=infixHead '(' args=functionArguments ')' b=functionBody {
-    $res = factory.createCall(null, $b.res, $args.res, $b.res);
+infixDefinition returns [LamaExpressionNode res]: n=infixHead e='(' args=functionArguments ')' b=functionBody {
+    $res = factory.createCall($b.res, $args.res, $e);
 };
                                                                // not sure if it works
 infixHead returns [LamaExpressionNode res]: 'public'? infixity op='regexp:[+*/%$#@!|&\\^?<>:=\\-]+' {
@@ -222,12 +223,14 @@ multiplicative returns [LamaExpressionNode res]: o=customOperatorExpression {
 } | o=customOperatorExpression {$res = $o.res;} (op=('*' | '/' | '%') o2=customOperatorExpression )+ {
     $res = factory.createBinary($op, $res, $o2.res);
 };
-
 customOperatorExpression returns [LamaExpressionNode res]: dt=dotNotation {
     $res = $dt.res;
-} | dt=dotNotation {$res = $dt.res;} ( i=infixop dt2=dotNotation ) + {
-    $res = factory.createCall(null, $res, $dt2.res.nodes, $dt2.res.end);
 };
+// tmp remove second part
+/*  | dt=dotNotation {$res = $dt.res;} ( i=infixop dt2=dotNotation ) + {
+    $res = factory.createCall(null, $res, $dt2.res, $dt2);
+};
+*/
 
 // here's bug in rules
 dotNotation returns [LamaExpressionNode res]: p=postfixExpression? {
@@ -237,11 +240,12 @@ dotNotation returns [LamaExpressionNode res]: p=postfixExpression? {
 }
 | (p=postfixExpression? {if ($p.res != null) $res = $p.res;} | a=arrayIndexing) {
     $res = $a.res;
-} ( '.' {List<LamaExpressionNode> args = new ArrayList<>(); args.add($res); } (c=functionCall | li=Lident) )+ {
+    List<LamaExpressionNode> args = new ArrayList<>(); args.add($res);
+} ( '.' (c=functionCall | li=Lident) )+ {
     Token stop = $li;
     if ($c.res != null) {
-        args.add($c.res.nodes);
-        stop = $c.res.nodes.end;
+        args.add($c.res);
+    //    stop = $c.res.getSourceEndIndex(); // is it ok?
     }
     $res = factory.createCall(factory.createRead(factory.createStringLiteral($li, false)), args, stop);
 };
@@ -258,22 +262,19 @@ functionCall returns [LamaExpressionNode res]:
 //    postfixExpression '(' ( expression ( ',' expression ) * )? ')' {extends=postfixExpression}; // was
 {
     List<LamaExpressionNode> args = new ArrayList<>();
-    Token stop;
 }
     p=primary { $res = $p.res; } ('[' el=expression ']')? {
         if ($el.res != null) $res = factory.createElem($res, $el.res);
     } '(' ( a=expression {
         args.add($a.res);
-        stop = $a.res.nodes.end;
-    } ( ',' a2=expression ) * )? ')' {
+    } ( ',' a2=expression ) * )? st=')' {
         args.add($a2.res);
-        stop = $a2.res.nodes.end;
-        $res = factory.createCall(factory.createRead(factory.createStringLiteral($p.res, false)), args, stop);
+        $res = factory.createCall($p.res, args, $st);
     };
 
 arrayIndexing returns [LamaExpressionNode res]:
     exp=postfixExpression {$res = $exp.res;} '[' in=expression ']' {
-        $res = factory.createReference($res, $in.res);
+        $res = factory.createElem($res, $in.res);
     }; //{extends=postfixExpression};
 
 lazyExpression : lazy basicExpression;

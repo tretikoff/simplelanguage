@@ -1,5 +1,6 @@
 package com.oracle.truffle.lama.parser;
 
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
@@ -9,6 +10,7 @@ import com.oracle.truffle.lama.nodes.controlflow.LamaBlockNode;
 import com.oracle.truffle.lama.nodes.controlflow.LamaIfNode;
 import com.oracle.truffle.lama.nodes.controlflow.LamaWhileNode;
 import com.oracle.truffle.lama.nodes.expression.*;
+import com.oracle.truffle.lama.runtime.LamaFunction;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.Token;
 
@@ -196,6 +198,21 @@ public class LamaNodeFactory {
         return result;
     }
 
+    public LamaExpressionNode defineFunction(String name, Token innerCodeStart, List<LamaExpressionNode> args, LamaExpressionNode body) {
+        int end = body.getSourceEndIndex();
+        int start = innerCodeStart.getStartIndex();
+        List<LamaExpressionNode> exs = new ArrayList<>(args.size() + 1);
+        exs.addAll(args);
+        exs.add(body);
+        LamaBlockNode fullBody = (LamaBlockNode) consumeBlock(exs, start, end);
+        // Truffle.getRuntime().createCallTarget ?
+        LamaFunction func = new LamaFunction();
+        LamaExpressionNode function = LamaFunctionNodeGen.create(func);
+
+
+        lexicalScope.addOne(name, null);
+        return createAssignment(new LamaStringLiteralNode(name), function );
+    }
 
     public LamaExpressionNode createReference(LamaExpressionNode fromNode) {
         if (fromNode == null) {
@@ -212,7 +229,7 @@ public class LamaNodeFactory {
         return result;
     }
 
-    public LamaExpressionNode createCall(String name, LamaExpressionNode functionNode, List<LamaExpressionNode> parameterNodes, Token finalToken) {
+    public LamaExpressionNode createCall(LamaExpressionNode functionNode, List<LamaExpressionNode> parameterNodes, Token finalToken) {
         if (functionNode == null || containsNull(parameterNodes)) {
             return null;
         }
@@ -223,9 +240,7 @@ public class LamaNodeFactory {
         final int endPos = finalToken.getStartIndex() + finalToken.getText().length();
         result.setSourceSection(startPos, endPos - startPos);
         result.addExpressionTag();
-        if (name != null) {
-            lexicalScope.addOne(name, null);
-        }
+
         return result;
     }
 
