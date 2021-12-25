@@ -20,13 +20,13 @@ import java.util.Map;
  * automatically generated parser to keep the attributed grammar of Lama small.
  */
 public class LamaNodeFactory {
-
+    private long nodeCount = 0;
     /**
      * Local variable names that are visible in the current block. Variables are not visible outside
      * of their defining block, to prevent the usage of undefined variables. Because of that, we can
      * decide during parsing if a name references a local variable or is a function name.
      */
-    static class LexicalScope {
+    class LexicalScope {
         protected final LexicalScope outer;
         protected final Map<String, FrameSlot> locals;
 
@@ -37,6 +37,26 @@ public class LamaNodeFactory {
                 locals.putAll(outer.locals);
             }
         }
+
+        public FrameSlot tryAddGet(String lhs) {
+            FrameSlot slot = locals.get(lhs);
+            if (slot != null) {
+                return slot;
+            }
+            // consider function scope as well
+            FrameSlot newOne = frameDescriptor.addFrameSlot( nodeCount + "@" + lhs, null, FrameSlotKind.Illegal);
+            nodeCount++;
+            locals.put(lhs, newOne);
+            return newOne;
+        }
+
+        private FrameSlot addOne(String lhs, Integer argumentIndex) {
+            FrameSlot newOne = frameDescriptor.addFrameSlot( nodeCount + "@" + lhs, argumentIndex, FrameSlotKind.Illegal);
+            nodeCount++;
+            locals.put(lhs, newOne);
+            return newOne;
+        }
+
 
         public void clear() {
             locals.clear();
@@ -49,7 +69,7 @@ public class LamaNodeFactory {
     private String functionName;
     private int functionBodyStartPos; // includes parameter list
     private int parameterCount;
-    private FrameDescriptor frameDescriptor;
+    protected FrameDescriptor frameDescriptor = new FrameDescriptor();
 
     private LexicalScope lexicalScope;
 
@@ -64,6 +84,17 @@ public class LamaNodeFactory {
         final LamaWhileNode whileNode = new LamaWhileNode(conditionNode, bodyNode);
         whileNode.setSourceSection(start, end - start);
         return whileNode;
+    }
+
+    public void registerVar(String name) {
+        lexicalScope.addOne(name, null);
+    }
+
+    public LamaStatementNode createFor(Token forToken, LamaExpressionNode initNode, LamaExpressionNode conditionNode, LamaExpressionNode bodyNode) {
+        if (conditionNode == null || bodyNode == null || initNode == null) {
+            return null;
+        }
+        return createWhile(forToken, conditionNode, bodyNode);
     }
 
     public LamaStatementNode createIf(Token ifToken, LamaExpressionNode conditionNode, LamaExpressionNode thenPartNode, LamaExpressionNode elsePartNode) {
@@ -153,7 +184,23 @@ public class LamaNodeFactory {
         return result;
     }
 
-    public LamaExpressionNode createCall(LamaExpressionNode functionNode, List<LamaExpressionNode> parameterNodes, Token finalToken) {
+
+    public LamaExpressionNode createReference(LamaExpressionNode fromNode) {
+        if (fromNode == null) {
+            return null;
+        }
+
+        String name = ((LamaStringLiteralNode) fromNode).executeGeneric(null).toString();
+        final LamaExpressionNode result;
+        final FrameSlot frameSlot = lexicalScope.tryAddGet(name);
+        // todo: think about functions here
+        result = LamaRefNodeGen.create(frameSlot);
+        result.setSourceSection(fromNode.getSourceCharIndex(), fromNode.getSourceLength());
+        result.addExpressionTag();
+        return result;
+    }
+
+    public LamaExpressionNode createCall(String name, LamaExpressionNode functionNode, List<LamaExpressionNode> parameterNodes, Token finalToken) {
         if (functionNode == null || containsNull(parameterNodes)) {
             return null;
         }
@@ -164,7 +211,9 @@ public class LamaNodeFactory {
         final int endPos = finalToken.getStartIndex() + finalToken.getText().length();
         result.setSourceSection(startPos, endPos - startPos);
         result.addExpressionTag();
-
+        if (name != null) {
+            lexicalScope.addOne(name, null);
+        }
         return result;
     }
 
@@ -241,6 +290,19 @@ public class LamaNodeFactory {
         }
 
         final LamaStringLiteralNode result = new LamaStringLiteralNode(literal.intern());
+        srcFromToken(result, literalToken);
+        result.addExpressionTag();
+        return result;
+    }
+
+    public LamaExpressionNode createNumericLiteral(int n) {
+        return new LamaLongLiteralNode(n);
+    }
+
+    public LamaExpressionNode createNumericLiteral(Token literalToken, int neg) {
+        LamaExpressionNode result;
+        long parsed = Long.parseLong(literalToken.getText());
+        result = new LamaLongLiteralNode(neg == -1 ? parsed * -1 : parsed);
         srcFromToken(result, literalToken);
         result.addExpressionTag();
         return result;
