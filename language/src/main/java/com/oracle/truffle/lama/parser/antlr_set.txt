@@ -1,0 +1,2 @@
+output: simplelanguage\language\src\main\java
+package: com.oracle.truffle.lama.parser.gen
