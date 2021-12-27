@@ -296,12 +296,7 @@ public class LamaNodeFactory {
         String name = (String)((LamaStringLiteralNode) nameNode).executeGeneric(null);
         final LamaExpressionNode result;
         final FrameSlot frameSlot = lexicalScope.locals.get(name);
-//        if (frameSlot != null) {
-//            /* Read of a local variable. */
-//            result = LamaReadLocalVariableNodeGen.create(frameSlot);
-//        } else {
-        /* Read of a global name. In our language, the only global names are functions. */
-        result = new LamaFunctionLiteralNode(name);
+        result = LamaReadNodeGen.create(frameSlot);
 //        }
         result.setSourceSection(nameNode.getSourceCharIndex(), nameNode.getSourceLength());
         result.addExpressionTag();

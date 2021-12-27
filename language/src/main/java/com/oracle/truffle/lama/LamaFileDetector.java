@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,45 +38,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.truffle.lama.test;
+package com.oracle.truffle.lama;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.Value;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import com.oracle.truffle.api.TruffleFile;
+import java.io.IOException;
+import java.nio.charset.Charset;
 
-public class SLInteropOperatorTest {
-    private Context context;
+public final class LamaFileDetector implements TruffleFile.FileTypeDetector {
 
-    @Before
-    public void setUp() {
-        context = Context.create("sl");
+    @Override
+    public String findMimeType(TruffleFile file) throws IOException {
+        String name = file.getName();
+        if (name != null && name.endsWith(".lama")) {
+            return LamaLanguage.MIME_TYPE;
+        }
+        return null;
     }
 
-    @After
-    public void tearDown() {
-        context = null;
-    }
-
-    @Test
-    public void testAdd() {
-        final Source src = Source.newBuilder("sl", "function testAdd(a,b) {return a + b;} function main() {return testAdd;}", "testAdd.sl").buildLiteral();
-        final Value fnc = context.eval(src);
-        Assert.assertTrue(fnc.canExecute());
-        final Value res = fnc.execute(1, 2);
-        Assert.assertTrue(res.isNumber());
-        Assert.assertEquals(3, res.asInt());
-    }
-
-    @Test
-    public void testSub() {
-        final Source src = Source.newBuilder("sl", "function testSub(a,b) {return a - b;} function main() {return testSub;}", "testSub.sl").buildLiteral();
-        final Value fnc = context.eval(src);
-        final Value res = fnc.execute(1, 2);
-        Assert.assertTrue(res.isNumber());
-        Assert.assertEquals(-1, res.asInt());
+    @Override
+    public Charset findEncoding(TruffleFile file) throws IOException {
+        return null;
     }
 }

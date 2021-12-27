@@ -7,9 +7,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.lama.LamaException;
 import com.oracle.truffle.lama.nodes.LamaExpressionNode;
 import com.oracle.truffle.lama.runtime.LamaArray;
-import org.graalvm.compiler.nodeinfo.NodeInfo;
+//import org.graalvm.compiler.nodeinfo.NodeInfo;
 
-@NodeInfo(shortName = "[]")
+//@NodeInfo(shortName = "[]")
 @NodeChild("objectNode")
 @NodeChild("indexNode")
 public abstract class LamaElementNode extends LamaExpressionNode {

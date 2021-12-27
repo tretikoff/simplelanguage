@@ -11,7 +11,7 @@ public class LamaRoot extends RootNode {
     private LamaExpressionNode body;
 
     public LamaRoot(LamaExpressionNode body, FrameDescriptor frameDescriptor) {
-        super(LamaLanguage.Companion.get(body), frameDescriptor);
+        super(LamaLanguage.get(body), frameDescriptor);
         this.body = body;
     }
 
